@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Should I Buy This? v2</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0c0c0e; --surface: #14141a; --surface2: #1c1c26; --surface3: #242430;
+  --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.14);
+  --text: #f0f0f5; --muted: #8a8a9a;
+  --accent: #7c6ff7; --accent2: #a89af7;
+  --green: #2ecc8a; --amber: #f5a623; --red: #e05454;
+  --green-bg: rgba(46,204,138,0.1); --amber-bg: rgba(245,166,35,0.1); --red-bg: rgba(224,84,84,0.1);
+  --serif: 'DM Serif Display', Georgia, serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --radius: 14px; --radius-sm: 8px;
+}
+body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 32px 16px; }
+.app { width: 100%; max-width: 580px; }
+
+/* Header */
+.header { text-align: center; margin-bottom: 36px; }
+.badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(124,111,247,0.12); border: 1px solid rgba(124,111,247,0.25); color: var(--accent2); font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 12px; border-radius: 100px; margin-bottom: 16px; }
+.header h1 { font-family: var(--serif); font-size: clamp(30px,8vw,46px); font-weight: 400; line-height: 1.1; margin-bottom: 10px; }
+.header h1 em { font-style: italic; color: var(--accent2); }
+.header p { font-size: 14px; color: var(--muted); line-height: 1.6; max-width: 380px; margin: 0 auto; }
+
+/* Progress */
+.progress-bar { display: flex; gap: 6px; margin-bottom: 24px; }
+.ps { flex: 1; height: 3px; background: var(--surface3); border-radius: 2px; position: relative; overflow: hidden; transition: background .3s; }
+.ps::after { content: ''; position: absolute; inset: 0; background: var(--accent); transform: scaleX(0); transform-origin: left; border-radius: 2px; transition: transform .45s cubic-bezier(.4,0,.2,1); }
+.ps.done::after { transform: scaleX(1); }
+.ps.active::after { transform: scaleX(0.5); background: var(--accent2); }
+
+/* Card */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; position: relative; overflow: hidden; }
+.card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(124,111,247,0.4), transparent); }
+.hidden { display: none !important; }
+
+.step-lbl { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.step-title { font-family: var(--serif); font-size: 24px; font-weight: 400; margin-bottom: 4px; }
+.step-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; line-height: 1.5; }
+
+/* Fields */
+.field { margin-bottom: 18px; }
+.field label { display: block; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 7px; }
+.input-wrap { position: relative; }
+.input-prefix { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 16px; color: var(--muted); pointer-events: none; }
+input[type="number"], input[type="text"] {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius-sm);
+  color: var(--text); font-family: var(--sans); font-size: 20px; font-weight: 500; padding: 12px 16px;
+  outline: none; transition: border-color .2s, box-shadow .2s; appearance: textfield; -moz-appearance: textfield;
+}
+input[type="text"] { font-size: 16px; }
+input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { display: none; }
+input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,111,247,.15); }
+.has-prefix { padding-left: 36px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* Selectors */
+.necessity-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; margin-bottom: 4px; }
+.sel-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--muted); font-family: var(--sans); font-size: 12px; font-weight: 500; padding: 10px 4px; cursor: pointer; transition: all .18s; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.sel-btn .num { font-family: var(--serif); font-size: 20px; color: inherit; }
+.sel-btn .lbl { font-size: 10px; text-align: center; line-height: 1.3; }
+.sel-btn:hover { border-color: var(--border2); color: var(--text); }
+.sel-btn.active { background: rgba(124,111,247,.15); border-color: var(--accent); color: var(--text); }
+.impulse-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.imp-btn { background: var(--surface2); border: 2px solid var(--border); border-radius: var(--radius-sm); color: var(--muted); font-family: var(--sans); font-size: 14px; font-weight: 500; padding: 16px; cursor: pointer; transition: all .18s; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+.imp-btn:hover { border-color: var(--border2); color: var(--text); }
+.imp-btn.active { border-color: var(--accent); background: rgba(124,111,247,.12); color: var(--text); }
+.imp-btn .icon { font-size: 20px; margin-bottom: 3px; }
+.imp-btn .sub { font-size: 11px; color: var(--muted); font-weight: 400; line-height: 1.4; }
+
+/* Buttons */
+.btn-row { display: flex; gap: 10px; margin-top: 24px; }
+.btn { border-radius: var(--radius-sm); font-family: var(--sans); font-size: 14px; font-weight: 600; padding: 13px 18px; cursor: pointer; transition: all .18s; border: none; outline: none; }
+.btn-primary { flex: 1; background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #6d60e0; transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+.btn-ghost { background: transparent; border: 1px solid var(--border2); color: var(--muted); }
+.btn-ghost:hover { color: var(--text); }
+
+/* ── RESULTS ── */
+.results { animation: fadeUp .4s ease both; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+.verdict-banner { border-radius: var(--radius); padding: 24px; margin-bottom: 14px; display: flex; align-items: flex-start; gap: 18px; }
+.verdict-banner.buy  { background: var(--green-bg); border: 1px solid rgba(46,204,138,.2); }
+.verdict-banner.risky{ background: var(--amber-bg); border: 1px solid rgba(245,166,35,.2); }
+.verdict-banner.no   { background: var(--red-bg);   border: 1px solid rgba(224,84,84,.2); }
+.v-icon { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+.buy  .v-icon { background: rgba(46,204,138,.15); }
+.risky.v-icon { background: rgba(245,166,35,.15); }
+.no   .v-icon { background: rgba(224,84,84,.15); }
+.v-tag { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 5px; }
+.buy  .v-tag { color: var(--green); }
+.risky .v-tag { color: var(--amber); }
+.no   .v-tag { color: var(--red); }
+.v-head { font-family: var(--serif); font-size: 26px; font-weight: 400; margin-bottom: 5px; }
+.v-why { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+/* Score */
+.score-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 12px; }
+.score-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.score-lbl { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.score-num { font-family: var(--serif); font-size: 40px; font-weight: 400; line-height: 1; }
+.score-num.green { color: var(--green); } .score-num.amber { color: var(--amber); } .score-num.red { color: var(--red); }
+.meter-track { width: 100%; height: 7px; background: var(--surface2); border-radius: 4px; overflow: hidden; margin-bottom: 8px; position: relative; }
+.meter-fill { height: 100%; border-radius: 4px; transition: width 1s cubic-bezier(.4,0,.2,1); }
+.meter-fill.green { background: linear-gradient(90deg,#1a9e6a,var(--green)); }
+.meter-fill.amber { background: linear-gradient(90deg,#c07a0f,var(--amber)); }
+.meter-fill.red   { background: linear-gradient(90deg,#a02020,var(--red)); }
+.meter-lbls { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); }
+
+/* Dimension breakdown */
+.breakdown { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 12px; }
+.breakdown-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 14px; }
+.dim-item { display: flex; align-items: center; gap: 10px; margin-bottom: 11px; }
+.dim-item:last-child { margin-bottom: 0; }
+.dim-name { font-size: 12px; font-weight: 500; color: var(--muted); width: 120px; flex-shrink: 0; }
+.dim-bar-track { flex: 1; height: 5px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+.dim-bar { height: 100%; border-radius: 3px; transition: width .8s cubic-bezier(.4,0,.2,1); }
+.dim-bar.green { background: var(--green); } .dim-bar.amber { background: var(--amber); } .dim-bar.red { background: var(--red); }
+.dim-val { font-size: 12px; font-weight: 600; width: 36px; text-align: right; flex-shrink: 0; }
+.dim-note { font-size: 11px; color: var(--muted); margin-left: 130px; margin-top: -6px; margin-bottom: 8px; line-height: 1.4; }
+
+/* Scenarios */
+.scenarios { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 12px; }
+.scenarios-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 14px; }
+.scenario-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.scenario-item { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; }
+.scenario-item.highlight { border-color: rgba(124,111,247,.35); background: rgba(124,111,247,.07); }
+.sc-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 8px; }
+.sc-savings { font-family: var(--serif); font-size: 18px; font-weight: 400; margin-bottom: 2px; }
+.sc-savings.pos { color: var(--green); } .sc-savings.warn { color: var(--amber); } .sc-savings.neg { color: var(--red); }
+.sc-detail { font-size: 11px; color: var(--muted); line-height: 1.5; }
+.sc-tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 100px; margin-top: 6px; }
+.sc-tag.rec { background: rgba(124,111,247,.15); color: var(--accent2); }
+
+/* Detail cards */
+.detail-cards { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.detail-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start; }
+.dc-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.dc-icon.impact { background: rgba(124,111,247,.12); }
+.dc-icon.suggest { background: rgba(46,204,138,.1); }
+.dc-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 4px; }
+.dc-body { font-size: 13px; color: var(--text); line-height: 1.55; }
+
+.reset-btn { width: 100%; background: transparent; border: 1px solid var(--border2); border-radius: var(--radius-sm); color: var(--muted); font-family: var(--sans); font-size: 13px; font-weight: 500; padding: 11px; cursor: pointer; transition: all .18s; margin-top: 4px; }
+.reset-btn:hover { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="badge">⚖ Financial decision engine v2</div>
+    <h1>Should I <em>buy</em> this?</h1>
+    <p>A smarter decision engine that factors in your savings, financial goals, and real-world risk.</p>
+  </div>
+
+  <div class="progress-bar" id="pbar"></div>
+
+  <div id="form-area">
+    <!-- STEP 1: Income + Expenses -->
+    <div id="step1" class="card">
+      <div class="step-lbl">Step 1 of 6 · Income</div>
+      <div class="step-title">Your monthly finances</div>
+      <div class="step-sub">Take-home income and your fixed costs every month.</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Monthly income</label>
+          <div class="input-wrap"><span class="input-prefix">$</span><input type="number" id="income" class="has-prefix" placeholder="3 500" min="1"></div>
+        </div>
+        <div class="field">
+          <label>Fixed expenses</label>
+          <div class="input-wrap"><span class="input-prefix">$</span><input type="number" id="expenses" class="has-prefix" placeholder="1 200" min="0"></div>
+        </div>
+      </div>
+      <div class="btn-row"><button class="btn btn-primary" onclick="go(2)">Continue →</button></div>
+    </div>
+
+    <!-- STEP 2: Savings -->
+    <div id="step2" class="card hidden">
+      <div class="step-lbl">Step 2 of 6 · Safety net</div>
+      <div class="step-title">Current savings</div>
+      <div class="step-sub">Your total savings balance right now. This is the new core factor — it tells us your financial safety net.</div>
+      <div class="field">
+        <label>Total savings</label>
+        <div class="input-wrap"><span class="input-prefix">$</span><input type="number" id="savings" class="has-prefix" placeholder="2 000" min="0"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="go(1)">←</button>
+        <button class="btn btn-primary" onclick="go(3)">Continue →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Goal -->
+    <div id="step3" class="card hidden">
+      <div class="step-lbl">Step 3 of 6 · Goal (optional)</div>
+      <div class="step-title">Financial goal</div>
+      <div class="step-sub">Are you saving toward something specific? This helps the engine measure opportunity cost.</div>
+      <div class="field">
+        <label>Goal name</label>
+        <input type="text" id="goal-name" placeholder="Emergency fund, new car, trip to Japan…">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Target amount</label>
+          <div class="input-wrap"><span class="input-prefix">$</span><input type="number" id="goal-target" class="has-prefix" placeholder="10 000" min="0"></div>
+        </div>
+        <div class="field">
+          <label>Monthly saving</label>
+          <div class="input-wrap"><span class="input-prefix">$</span><input type="number" id="goal-monthly" class="has-prefix" placeholder="300" min="0"></div>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="go(2)">←</button>
+        <button class="btn btn-primary" onclick="go(4)">Continue →</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: Item price -->
+    <div id="step4" class="card hidden">
+      <div class="step-lbl">Step 4 of 6 · The item</div>
+      <div class="step-title">What's the price?</div>
+      <div class="step-sub">Full price of the item you're considering buying.</div>
+      <div class="field">
+        <label>Item price</label>
+        <div class="input-wrap"><span class="input-prefix">$</span><input type="number" id="price" class="has-prefix" placeholder="250" min="1"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="go(3)">←</button>
+        <button class="btn btn-primary" onclick="go(5)">Continue →</button>
+      </div>
+    </div>
+
+    <!-- STEP 5: Necessity -->
+    <div id="step5" class="card hidden">
+      <div class="step-lbl">Step 5 of 6 · Need vs want</div>
+      <div class="step-title">How necessary is this?</div>
+      <div class="step-sub">Be honest — where does this land on the spectrum?</div>
+      <div class="necessity-grid">
+        <button class="sel-btn" data-val="1" onclick="setNec(1)"><span class="num">1</span><span class="lbl">Pure want</span></button>
+        <button class="sel-btn" data-val="2" onclick="setNec(2)"><span class="num">2</span><span class="lbl">Nice to have</span></button>
+        <button class="sel-btn" data-val="3" onclick="setNec(3)"><span class="num">3</span><span class="lbl">Balanced</span></button>
+        <button class="sel-btn" data-val="4" onclick="setNec(4)"><span class="num">4</span><span class="lbl">Quite needed</span></button>
+        <button class="sel-btn" data-val="5" onclick="setNec(5)"><span class="num">5</span><span class="lbl">Essential</span></button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="go(4)">←</button>
+        <button class="btn btn-primary" onclick="go(6)">Continue →</button>
+      </div>
+    </div>
+
+    <!-- STEP 6: Impulse -->
+    <div id="step6" class="card hidden">
+      <div class="step-lbl">Step 6 of 6 · Behavior</div>
+      <div class="step-title">Planned or impulse?</div>
+      <div class="step-sub">How did this purchase come to mind?</div>
+      <div class="impulse-grid">
+        <button class="imp-btn" data-val="planned" onclick="setImp('planned')">
+          <span class="icon">🗓</span><strong>Planned</strong>
+          <span class="sub">Been thinking about this for a while</span>
+        </button>
+        <button class="imp-btn" data-val="impulse" onclick="setImp('impulse')">
+          <span class="icon">⚡</span><strong>Impulse</strong>
+          <span class="sub">Just saw it and want it now</span>
+        </button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="go(5)">←</button>
+        <button class="btn btn-primary" onclick="analyze()">Analyze →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results" class="hidden results">
+    <div id="verdict-banner" class="verdict-banner">
+      <div class="v-icon" id="v-icon"></div>
+      <div>
+        <div class="v-tag" id="v-tag"></div>
+        <div class="v-head" id="v-head"></div>
+        <div class="v-why" id="v-why"></div>
+      </div>
+    </div>
+
+    <div class="score-card">
+      <div class="score-row">
+        <span class="score-lbl">Decision score</span>
+        <span class="score-num" id="score-num">—</span>
+      </div>
+      <div class="meter-track"><div class="meter-fill" id="meter" style="width:0%"></div></div>
+      <div class="meter-lbls"><span>0 · Avoid</span><span>50 · Borderline</span><span>100 · Safe</span></div>
+    </div>
+
+    <div class="breakdown">
+      <div class="breakdown-title">Score breakdown</div>
+      <div id="dims"></div>
+    </div>
+
+    <div class="scenarios">
+      <div class="scenarios-title">Scenario comparison</div>
+      <div class="scenario-grid" id="scenarios"></div>
+    </div>
+
+    <div class="detail-cards">
+      <div class="detail-card">
+        <div class="dc-icon impact">💰</div>
+        <div><div class="dc-title">Financial impact</div><div class="dc-body" id="d-impact">—</div></div>
+      </div>
+      <div class="detail-card">
+        <div class="dc-icon suggest">💡</div>
+        <div><div class="dc-title">Suggestion</div><div class="dc-body" id="d-suggest">—</div></div>
+      </div>
+    </div>
+
+    <button class="reset-btn" onclick="reset()">← Analyze a different item</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════
+const CONFIG = {
+  weights: { affordability:.25, financialRisk:.20, savingsImpact:.25, necessity:.15, goalImpact:.10, impulse:.05 },
+  thresholds: { safe:68, risky:42 },
+  affordabilityBP:  [{t:.05,s:97},{t:.15,s:88},{t:.30,s:72},{t:.50,s:55},{t:.75,s:35},{t:1.00,s:18},{t:2.00,s:5}],
+  financialRiskBP:  [{t:.30,s:95},{t:.50,s:82},{t:.65,s:65},{t:.80,s:42},{t:.90,s:22},{t:1.00,s:5}],
+  savingsImpactBP:  [{t:0,s:2},{t:.5,s:18},{t:1,s:38},{t:2,s:60},{t:3,s:80},{t:6,s:95},{t:12,s:100}],
+  goalImpactBP:     [{t:0,s:100},{t:.5,s:85},{t:1,s:70},{t:2,s:50},{t:3,s:35},{t:6,s:18},{t:12,s:5}],
+  necessityMap:     {1:12,2:35,3:55,4:78,5:100},
+  impulseMap:       {planned:92,impulse:28},
+};
+
+// ═══════════════════════════════════════════════
+//  ENGINE
+// ═══════════════════════════════════════════════
+function lerp(val, pts) {
+  if (val <= pts[0].t) return pts[0].s;
+  if (val >= pts[pts.length-1].t) return pts[pts.length-1].s;
+  for (let i=0;i<pts.length-1;i++) {
+    if (val >= pts[i].t && val <= pts[i+1].t) {
+      const ratio = (val - pts[i].t) / (pts[i+1].t - pts[i].t);
+      return pts[i].s + ratio * (pts[i+1].s - pts[i].s);
+    }
+  }
+  return 50;
+}
+const clamp = (v,a=0,b=100) => Math.max(a,Math.min(b,v));
+
+function engine(inp) {
+  const {income, expenses, price, savings, necessity, impulse, goal} = inp;
+  const disposable = income - expenses;
+
+  // Dimension scores
+  const affordR = disposable > 0 ? price/disposable : 99;
+  const aff = clamp(lerp(affordR, CONFIG.affordabilityBP));
+  const fRisk = clamp(lerp(expenses/income, CONFIG.financialRiskBP));
+  const savAfter = savings - price;
+  const monthsBuf = expenses > 0 ? Math.max(0, savAfter/expenses) : (savAfter >= 0 ? 12 : 0);
+  const savImp = clamp(lerp(monthsBuf, CONFIG.savingsImpactBP));
+  const nec = CONFIG.necessityMap[necessity] || 50;
+  const imp = CONFIG.impulseMap[impulse] || 50;
+  let goalImp = 75;
+  let goalDelay = 0;
+  if (goal && goal.target && goal.monthly) {
+    goalDelay = goal.monthly > 0 ? price / goal.monthly : 12;
+    goalImp = clamp(lerp(goalDelay, CONFIG.goalImpactBP));
+  }
+
+  const W = CONFIG.weights;
+  const dims = {
+    affordability: { label:'Affordability',  score:Math.round(aff),   weight:W.affordability, note:`Item = ${Math.round(affordR*100)}% of disposable income` },
+    financialRisk: { label:'Financial risk', score:Math.round(fRisk), weight:W.financialRisk, note:`Fixed costs = ${Math.round((expenses/income)*100)}% of income` },
+    savingsImpact: { label:'Savings impact', score:Math.round(savImp),weight:W.savingsImpact, note:`After buying: $${Math.round(savAfter).toLocaleString()} (${monthsBuf.toFixed(1)} mo buffer)` },
+    necessity:     { label:'Necessity',      score:nec,               weight:W.necessity,     note:['','Pure want','Nice to have','Balanced','Quite needed','Essential'][necessity] },
+    goalImpact:    { label:'Goal impact',    score:Math.round(goalImp),weight:W.goalImpact,   note: goal?.name ? `Delays "${goal.name}" by ~${goalDelay.toFixed(1)} months` : 'No goal set' },
+    impulse:       { label:'Impulse risk',   score:imp,               weight:W.impulse,       note: impulse==='impulse' ? 'Impulse — higher regret risk' : 'Planned — lower regret risk' },
+  };
+
+  let finalScore = 0;
+  for (const d of Object.values(dims)) {
+    d.contribution = Math.round(d.score * d.weight * 10) / 10;
+    finalScore += d.score * d.weight;
+  }
+  finalScore = clamp(Math.round(finalScore));
+
+  const verdict = finalScore >= CONFIG.thresholds.safe ? 'buy' : finalScore >= CONFIG.thresholds.risky ? 'risky' : 'no';
+
+  // Scenarios
+  function sim(mw) {
+    const accSavings = savings + mw * disposable;
+    const sAfter = accSavings - price;
+    const buf = expenses > 0 ? sAfter / expenses : 0;
+    const gPct = (goal?.target && goal?.monthly)
+      ? Math.min(100, Math.round(((savings + mw * goal.monthly) / goal.target) * 100))
+      : null;
+    return { wait: mw, savingsBefore: Math.round(accSavings), savingsAfter: Math.round(sAfter), buffer: Math.round(buf*10)/10, goalPct: gPct };
+  }
+
+  const scenarios = { now: sim(0), one: sim(1), two: sim(2) };
+
+  // Impact
+  const impact = savAfter < 0
+    ? `This purchase exceeds your savings by $${Math.abs(Math.round(savAfter)).toLocaleString()}. You'd need to use credit or deplete savings completely.`
+    : `After buying, you'd have $${Math.round(savAfter).toLocaleString()} left in savings — that's ${monthsBuf.toFixed(1)} months of expense coverage.`;
+
+  // Suggestion
+  let suggestion;
+  if (verdict === 'buy') {
+    suggestion = impulse === 'impulse'
+      ? 'The numbers work — but sleep on it 24 hours to confirm it\'s genuinely what you want. Then buy confidently.'
+      : 'Go ahead. You planned this and your finances support it comfortably.';
+  } else if (verdict === 'risky') {
+    suggestion = `Wait 1 month. By then you'd have $${scenarios.one.savingsBefore.toLocaleString()} before the purchase, leaving $${scenarios.one.savingsAfter.toLocaleString()} after — a noticeably safer position.`
+      + (goal?.name ? ` You'd also reach ${scenarios.one.goalPct}% of your "${goal.name}" goal.` : '');
+  } else {
+    suggestion = scenarios.two.savingsAfter > 0
+      ? `Wait 2 months. You'd go in with $${scenarios.two.savingsBefore.toLocaleString()} and leave $${scenarios.two.savingsAfter.toLocaleString()} (${scenarios.two.buffer}-month buffer) after the purchase.`
+        + (goal?.name ? ` Goal progress: ${scenarios.two.goalPct}%.` : '')
+      : goal?.name
+        ? `Focus on your "${goal.name}" goal first. Once you build a solid buffer, revisit this purchase.`
+        : `Build 3 months of expenses in savings first ($${Math.round(expenses*3).toLocaleString()}), then this purchase becomes much safer.`;
+  }
+
+  // Explanation
+  const weakest = Object.entries(dims).sort((a,b)=>a[1].score-b[1].score)[0][1];
+  let explanation;
+  if (verdict === 'buy') {
+    explanation = `Your finances support this. The item costs ${Math.round(affordR*100)}% of disposable income, your savings stay healthy at $${Math.round(savAfter).toLocaleString()} after buying, and necessity is rated ${necessity}/5.`;
+  } else if (verdict === 'risky') {
+    explanation = `This sits in a grey zone. Your weakest factor is ${weakest.label.toLowerCase()} (${weakest.score}/100). ${weakest.note}. It's not a crisis, but one unexpected cost could cause problems.`;
+  } else {
+    explanation = `Not recommended now. ${weakest.label} is your critical weak point (${weakest.score}/100): ${weakest.note}.${goal?.name ? ` It also delays your "${goal.name}" goal by ~${goalDelay.toFixed(1)} months.` : ''}`;
+  }
+
+  return { score: finalScore, verdict, disposable: Math.round(disposable), dims, scenarios, impact, suggestion, explanation };
+}
+
+// ═══════════════════════════════════════════════
+//  STATE & NAVIGATION
+// ═══════════════════════════════════════════════
+let S = { step: 1, necessity: null, impulse: null };
+const TOTAL = 6;
+
+function buildProgress() {
+  const bar = document.getElementById('pbar');
+  bar.innerHTML = Array.from({length:TOTAL},(_,i) => `<div class="ps" id="ps${i+1}"></div>`).join('');
+}
+
+function updateProgress() {
+  for (let i=1;i<=TOTAL;i++) {
+    const el = document.getElementById('ps'+i);
+    el.className = 'ps' + (i < S.step ? ' done' : i === S.step ? ' active' : '');
+  }
+}
+
+function go(n) {
+  if (n > S.step) {
+    if (S.step === 1) {
+      const inc = +document.getElementById('income').value;
+      const exp = +document.getElementById('expenses').value;
+      if (!inc || inc <= 0) { alert('Please enter your monthly income.'); return; }
+      if (isNaN(exp) || exp < 0) { alert('Please enter your monthly expenses (0 if none).'); return; }
+      if (exp >= inc) { alert('Expenses cannot be equal to or greater than income.'); return; }
+    }
+    if (S.step === 2) {
+      const sav = document.getElementById('savings').value;
+      if (sav === '' || +sav < 0) { alert('Please enter your current savings (0 if none).'); return; }
+    }
+    if (S.step === 4) {
+      const p = +document.getElementById('price').value;
+      if (!p || p <= 0) { alert('Please enter the item price.'); return; }
+    }
+    if (S.step === 5 && S.necessity == null) { alert('Please select a necessity level.'); return; }
+  }
+  document.getElementById('step' + S.step).classList.add('hidden');
+  S.step = n;
+  document.getElementById('step' + n).classList.remove('hidden');
+  updateProgress();
+}
+
+function setNec(v) {
+  S.necessity = v;
+  document.querySelectorAll('.sel-btn').forEach(b => b.classList.toggle('active', +b.dataset.val === v));
+}
+function setImp(v) {
+  S.impulse = v;
+  document.querySelectorAll('.imp-btn').forEach(b => b.classList.toggle('active', b.dataset.val === v));
+}
+
+// ═══════════════════════════════════════════════
+//  ANALYZE & RENDER
+// ═══════════════════════════════════════════════
+function analyze() {
+  if (!S.impulse) { alert('Please select planned or impulse.'); return; }
+
+  const goalName = document.getElementById('goal-name').value.trim();
+  const goalTarget = +document.getElementById('goal-target').value;
+  const goalMonthly = +document.getElementById('goal-monthly').value;
+
+  const inputs = {
+    income:    +document.getElementById('income').value,
+    expenses:  +document.getElementById('expenses').value,
+    price:     +document.getElementById('price').value,
+    savings:   +document.getElementById('savings').value || 0,
+    necessity: S.necessity,
+    impulse:   S.impulse,
+    goal: goalName && goalTarget && goalMonthly ? { name: goalName, target: goalTarget, monthly: goalMonthly } : null,
+  };
+
+  let result;
+  try { result = engine(inputs); }
+  catch(e) { alert('Error: ' + e.message); return; }
+
+  // Hide form, show results
+  document.getElementById('form-area').classList.add('hidden');
+  document.getElementById('results').classList.remove('hidden');
+  for (let i=1;i<=TOTAL;i++) document.getElementById('ps'+i).className = 'ps done';
+
+  // Verdict banner
+  const banner = document.getElementById('verdict-banner');
+  banner.className = 'verdict-banner ' + result.verdict;
+  document.getElementById('v-icon').textContent = result.verdict === 'buy' ? '✓' : result.verdict === 'risky' ? '⚠' : '✕';
+  const tags = { buy: '✓ Safe to buy', risky: '⚠ Risky', no: '✕ Not recommended' };
+  const heads = { buy: 'Go ahead and buy it.', risky: 'Proceed with caution.', no: "Don't buy this right now." };
+  document.getElementById('v-tag').textContent = tags[result.verdict];
+  document.getElementById('v-head').textContent = heads[result.verdict];
+  document.getElementById('v-why').textContent = result.explanation;
+
+  // Score
+  const color = result.score >= 68 ? 'green' : result.score >= 42 ? 'amber' : 'red';
+  document.getElementById('score-num').textContent = result.score;
+  document.getElementById('score-num').className = 'score-num ' + color;
+  setTimeout(() => {
+    const m = document.getElementById('meter');
+    m.style.width = result.score + '%';
+    m.className = 'meter-fill ' + color;
+  }, 80);
+
+  // Dimension breakdown
+  const dimsEl = document.getElementById('dims');
+  dimsEl.innerHTML = '';
+  for (const d of Object.values(result.dims)) {
+    const c = d.score >= 68 ? 'green' : d.score >= 42 ? 'amber' : 'red';
+    const row = document.createElement('div');
+    row.innerHTML = `
+      <div class="dim-item">
+        <div class="dim-name">${d.label}</div>
+        <div class="dim-bar-track"><div class="dim-bar ${c}" style="width:0%" data-w="${d.score}"></div></div>
+        <div class="dim-val" style="color:var(--${c})">${d.score}</div>
+      </div>
+      <div class="dim-note">${d.note} · weight ${Math.round(d.weight*100)}%</div>
+    `;
+    dimsEl.appendChild(row);
+  }
+  setTimeout(() => {
+    document.querySelectorAll('.dim-bar[data-w]').forEach(b => { b.style.width = b.dataset.w + '%'; });
+  }, 100);
+
+  // Scenarios
+  const scEl = document.getElementById('scenarios');
+  const scData = [
+    { label: 'Buy now',       s: result.scenarios.now, rec: result.verdict === 'buy' },
+    { label: 'Wait 1 month',  s: result.scenarios.one, rec: result.verdict === 'risky' },
+    { label: 'Wait 2 months', s: result.scenarios.two, rec: result.verdict === 'no' },
+  ];
+  scEl.innerHTML = scData.map(({ label, s, rec }) => {
+    const sc = s.savingsAfter < 0 ? 'neg' : s.buffer < 1 ? 'warn' : 'pos';
+    const sign = s.savingsAfter >= 0 ? '$' : '-$';
+    const val = Math.abs(s.savingsAfter).toLocaleString();
+    return `
+      <div class="scenario-item ${rec ? 'highlight' : ''}">
+        <div class="sc-label">${label}</div>
+        <div class="sc-savings ${sc}">${sign}${val}</div>
+        <div class="sc-detail">
+          Savings after purchase<br>
+          ${s.buffer.toFixed(1)} mo buffer
+          ${s.goalPct != null ? `<br>Goal: ${s.goalPct}%` : ''}
+        </div>
+        ${rec ? '<span class="sc-tag rec">Recommended</span>' : ''}
+      </div>`;
+  }).join('');
+
+  // Impact + suggestion
+  document.getElementById('d-impact').textContent = result.impact;
+  document.getElementById('d-suggest').textContent = result.suggestion;
+}
+
+function reset() {
+  S = { step: 1, necessity: null, impulse: null };
+  ['income','expenses','savings','price','goal-name','goal-target','goal-monthly'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.querySelectorAll('.sel-btn, .imp-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('results').classList.add('hidden');
+  document.getElementById('form-area').classList.remove('hidden');
+  document.getElementById('meter').style.width = '0%';
+  for (let i=1;i<=TOTAL;i++) document.getElementById('step'+i).classList.add('hidden');
+  document.getElementById('step1').classList.remove('hidden');
+  S.step = 1;
+  updateProgress();
+}
+
+buildProgress();
+updateProgress();
+</script>
+</body>
+</html>
